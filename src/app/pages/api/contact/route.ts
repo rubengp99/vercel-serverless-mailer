@@ -1,8 +1,8 @@
-// pages/api/mailer.ts
+// app/api/mailer/route.ts (App Router style)
 import { NextResponse } from "next/server";
 import nodemailer from "nodemailer";
-import ReactDOMServer from "react-dom/server";
-import { JobSignalEmail } from "@/emails/JobSignalEmail"; // ✅ TSX component
+import { render } from "@react-email/render";
+import { JobSignalEmail } from "@/emails/JobSignalEmail";
 
 interface MailerRequestBody {
   name: string;
@@ -15,12 +15,20 @@ export async function POST(req: Request) {
     const body: MailerRequestBody = await req.json();
 
     if (!body.name || !body.email || !body.message) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Missing required fields" },
+        { status: 400 }
+      );
     }
 
-    const n = await JobSignalEmail({ name: body.name, message: body.message })
-    // Render the component to static HTML string
-    const html = ReactDOMServer.renderToStaticMarkup(n);
+    // ✅ render by calling the component function
+    const element = await JobSignalEmail({
+      name: body.name,
+      email: body.email,
+      message: body.message,
+    });
+
+    const html = await render(element);
 
     const transporter = nodemailer.createTransport({
       service: "gmail",
@@ -34,12 +42,15 @@ export async function POST(req: Request) {
       from: `"${body.name}" <${body.email}>`,
       to: process.env.SMTP_USER,
       subject: "📡 New Job Signal Message",
-      html, // send rendered HTML
+      html,
     });
 
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error("Mailer error:", err);
-    return NextResponse.json({ error: "Failed to send email" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to send email" },
+      { status: 500 }
+    );
   }
 }
