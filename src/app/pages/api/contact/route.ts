@@ -4,8 +4,6 @@ import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface MailerRequestBody {
   name: string;
   email: string;
@@ -14,6 +12,7 @@ interface MailerRequestBody {
 
 export async function POST(req: Request) {
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const body: MailerRequestBody = await req.json();
 
     if (!body.name || !body.email || !body.message) {
