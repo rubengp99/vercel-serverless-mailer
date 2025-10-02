@@ -1,8 +1,10 @@
 // app/api/mailer/route.ts (App Router style)
 import { NextResponse } from "next/server";
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 interface MailerRequestBody {
   name: string;
@@ -21,7 +23,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // ✅ render by calling the component function
+    // render by calling the component function
     const element = await JobSignalEmail({
       name: body.name,
       email: body.email,
@@ -30,22 +32,22 @@ export async function POST(req: Request) {
 
     const html = await render(element);
 
-    const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS,
-      },
-    });
-
-    await transporter.sendMail({
+    const { data, error } = await resend.emails.send({
       from: `"${body.name}" <${body.email}>`,
-      to: process.env.SMTP_USER,
+      to: process.env.SMTP_USER as string,
       subject: "📡 New Job Signal Message",
       html,
     });
 
-    return NextResponse.json({ success: true });
+    if (error) {
+      console.error("Resend error:", error);
+      return NextResponse.json(
+        { error: "Failed to send email" },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({ success: true, data });
   } catch (err) {
     console.error("Mailer error:", err);
     return NextResponse.json(
