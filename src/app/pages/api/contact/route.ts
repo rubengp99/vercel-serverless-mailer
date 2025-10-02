@@ -46,7 +46,17 @@ export async function POST(req: Request) {
       );
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json(
+      { success: true, data },
+      {
+        status: 200,
+        headers: {
+          "Access-Control-Allow-Origin": "*", // 👈 allow frontend
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      }
+    );
   } catch (err) {
     console.error("Mailer error:", err);
     return NextResponse.json(
