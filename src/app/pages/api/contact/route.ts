@@ -1,5 +1,5 @@
 // app/api/mailer/route.ts (App Router style)
-import { NextResponse } from "next/server";
+import type { NextApiRequest, NextApiResponse } from "next";
 import { Resend } from "resend";
 import { render } from "@react-email/render";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
@@ -10,16 +10,30 @@ interface MailerRequestBody {
   message: string;
 }
 
-export async function POST(req: Request) {
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*", // or restrict to your Vite domain
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Access-Control-Allow-Headers": "Content-Type",
+};
+
+export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  if (req.method === "OPTIONS") {
+    // ✅ Handle CORS preflight
+    res.writeHead(200, corsHeaders);
+    return res.end();
+  }
+
+  if (req.method !== "POST") {
+    res.writeHead(405, corsHeaders);
+    return res.end(JSON.stringify({ error: "Method not allowed" }));
+  }
+
   try {
     const resend = new Resend(process.env.RESEND_API_KEY);
-    const body: MailerRequestBody = await req.json();
+    const body: MailerRequestBody = req.body
 
     if (!body.name || !body.email || !body.message) {
-      return NextResponse.json(
-        { error: "Missing required fields" },
-        { status: 400 }
-      );
+      return res.end(JSON.stringify({ error: "Missing required fields" }));
     }
 
     // render by calling the component function
@@ -40,38 +54,15 @@ export async function POST(req: Request) {
 
     if (error) {
       console.error("Resend error:", error);
-      return NextResponse.json(
-        { error: "Failed to send email" },
-        { status: 500 }
-      );
+      res.writeHead(500, corsHeaders);
+      return res.end(JSON.stringify({ error: "Failed to send email" }));
     }
 
-    return NextResponse.json(
-      { success: true, data },
-      {
-        status: 200,
-        headers: {
-          "Access-Control-Allow-Origin": "*", // 👈 allow frontend
-          "Access-Control-Allow-Methods": "POST, OPTIONS",
-          "Access-Control-Allow-Headers": "Content-Type",
-        },
-      }
-    );
+    res.writeHead(200, corsHeaders);
+    return res.end(JSON.stringify({ success: true, data }));
   } catch (err) {
     console.error("Mailer error:", err);
-    return NextResponse.json(
-      { error: "Failed to send email" },
-      { status: 500 }
-    );
+    res.writeHead(500, corsHeaders);
+    return res.end(JSON.stringify({ error: "Internal server error" }));
   }
-}
-
-export async function OPTIONS() {
-  return NextResponse.json({}, {
-    headers: {
-      "Access-Control-Allow-Origin": "*",
-      "Access-Control-Allow-Methods": "POST, OPTIONS",
-      "Access-Control-Allow-Headers": "Content-Type",
-    },
-  });
 }
