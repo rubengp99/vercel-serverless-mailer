@@ -1,4 +1,3 @@
-// app/api/mailer/route.ts
 import { NextResponse } from "next/server";
 import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
@@ -31,7 +30,7 @@ export async function POST(req: Request) {
       );
     }
 
-    // Render the email React component to HTML
+    // Render email template
     const element = await JobSignalEmail({
       name: body.name,
       email: body.email,
@@ -39,21 +38,22 @@ export async function POST(req: Request) {
     });
     const html = await render(element);
 
-    // Configure SMTP transporter
+    // Configure Gmail SMTP transporter
     const transporter = nodemailer.createTransport({
-      host: process.env.SMTP_HOST, // e.g., smtp.protonmail.ch
-      port: parseInt(process.env.SMTP_PORT || "587", 10), // 587 for STARTTLS, 465 for SSL
-      secure: process.env.SMTP_SECURE === "true", // true for 465, false for 587
+      host: "smtp.gmail.com",
+      port: 587,
+      secure: false, // upgrade later with STARTTLS
       auth: {
-        user: process.env.SMTP_AUTH, // your email address (e.g., user@proton.me)
-        pass: process.env.SMTP_PASS, // SMTP password or token
+        user: process.env.SMTP_USER, // your Gmail address
+        pass: process.env.SMTP_PASS, // your Gmail App Password
       },
     });
 
-    // Send the email
+    // Send email
     const info = await transporter.sendMail({
-      from: `"${body.name}" <${body.email}>`, // Sender (user input)
-      to: process.env.SMTP_USER as string, // Receiver (your inbox)
+      from: `"${body.name}" <${process.env.SMTP_AUTH}>`, // Gmail enforces authenticated sender
+      replyTo: body.email, // so replies go to the user's email
+      to: process.env.SMTP_USER, // send to yourself (your Gmail)
       subject: "📡 New Job Signal Message",
       html,
     });
