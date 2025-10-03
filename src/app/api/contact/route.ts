@@ -44,7 +44,7 @@ export async function POST(req: Request) {
       port: 587,
       secure: false, // upgrade later with STARTTLS
       auth: {
-        user: process.env.SMTP_USER, // your Gmail address
+        user: process.env.SMTP_AUTH, // your Gmail address
         pass: process.env.SMTP_PASS, // your Gmail App Password
       },
     });
