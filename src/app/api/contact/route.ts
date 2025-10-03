@@ -45,7 +45,7 @@ export async function POST(req: Request) {
       port: parseInt(process.env.SMTP_PORT || "587", 10), // 587 for STARTTLS, 465 for SSL
       secure: process.env.SMTP_SECURE === "true", // true for 465, false for 587
       auth: {
-        user: process.env.SMTP_USER, // your email address (e.g., user@proton.me)
+        user: process.env.SMTP_AUTH, // your email address (e.g., user@proton.me)
         pass: process.env.SMTP_PASS, // SMTP password or token
       },
     });
