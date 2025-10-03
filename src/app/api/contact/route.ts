@@ -1,7 +1,7 @@
-// app/api/mailer/route.ts (App Router style)
+// app/api/mailer/route.ts
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 import { render } from "@react-email/render";
+import nodemailer from "nodemailer";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
 
 interface MailerRequestBody {
@@ -22,8 +22,6 @@ export async function OPTIONS() {
 
 export async function POST(req: Request) {
   try {
-    const resend = new Resend(process.env.RESEND_API_KEY);
-
     const body: MailerRequestBody = await req.json();
 
     if (!body.name || !body.email || !body.message) {
@@ -33,32 +31,35 @@ export async function POST(req: Request) {
       );
     }
 
-    // render by calling the component function
+    // Render the email React component to HTML
     const element = await JobSignalEmail({
       name: body.name,
       email: body.email,
       message: body.message,
     });
-
     const html = await render(element);
 
-    const { data, error } = await resend.emails.send({
-      from: `"${body.name}" <${body.email}>`,
-      to: process.env.SMTP_USER as string,
+    // Configure SMTP transporter
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST, // e.g., smtp.protonmail.ch
+      port: parseInt(process.env.SMTP_PORT || "587", 10), // 587 for STARTTLS, 465 for SSL
+      secure: process.env.SMTP_SECURE === "true", // true for 465, false for 587
+      auth: {
+        user: process.env.SMTP_USER, // your email address (e.g., user@proton.me)
+        pass: process.env.SMTP_PASS, // SMTP password or token
+      },
+    });
+
+    // Send the email
+    const info = await transporter.sendMail({
+      from: `"${body.name}" <${body.email}>`, // Sender (user input)
+      to: process.env.SMTP_USER as string, // Receiver (your inbox)
       subject: "📡 New Job Signal Message",
       html,
     });
 
-    if (error) {
-      console.error("Resend error:", error);
-      return NextResponse.json(
-        { error: "Failed to send email" },
-        { status: 500, headers: corsHeaders }
-      );
-    }
-
     return NextResponse.json(
-      { success: true, data },
+      { success: true, info },
       { status: 200, headers: corsHeaders }
     );
   } catch (err) {
