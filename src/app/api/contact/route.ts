@@ -11,7 +11,7 @@ interface MailerRequestBody {
 }
 
 const corsHeaders = {
-  "Access-Control-Allow-Origin": "https://rubengp99.github.io/",
+  "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type",
 };
