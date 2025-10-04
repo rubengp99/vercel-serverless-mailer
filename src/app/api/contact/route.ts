@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
+import { error } from "node:console";
 
 interface MailerRequestBody {
   name: string;
@@ -38,20 +39,24 @@ export async function POST(req: Request) {
     });
     const html = await render(element);
 
+    if (process.env.SMTP_PASS?.length != 16 || !process.env.SMTP_USER) {
+      throw error("invalid credentials")
+    }
+
     // Configure Gmail SMTP transporter
     const transporter = nodemailer.createTransport({
       host: "smtp.gmail.com",
       port: 587,
       secure: false, // upgrade later with STARTTLS
       auth: {
-        user: process.env.SMTP_AUTH, // your Gmail address
+        user: process.env.SMTP_USER, // your Gmail address
         pass: process.env.SMTP_PASS, // your Gmail App Password
       },
     });
 
     // Send email
     const info = await transporter.sendMail({
-      from: `"${body.name}" <${process.env.SMTP_AUTH}>`, // Gmail enforces authenticated sender
+      from: `"${body.name}" <${process.env.SMTP_USER}>`, // Gmail enforces authenticated sender
       replyTo: body.email, // so replies go to the user's email
       to: process.env.SMTP_USER, // send to yourself (your Gmail)
       subject: "📡 New Job Signal Message",
