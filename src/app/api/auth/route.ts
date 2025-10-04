@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { signJwt } from "@/lib/jwt";
 import { corsHeaders } from "@/lib/cors";
 import { rateLimit } from "@/lib/rate-limit";
+import { decryptPassword } from "@/lib/crypto";
 
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") || "unknown";
@@ -15,9 +16,11 @@ export async function POST(req: Request) {
     );
   }
 
-  const { email, password } = await req.json();
+  const { email, iv, password } = await req.json();
 
-  if (email === process.env.ADMIN_EMAIL && password === process.env.ADMIN_PASS) {
+  const pwd = await decryptPassword(iv, password)
+
+  if (email === process.env.ADMIN_EMAIL && pwd === process.env.ADMIN_PASS) {
     const token = signJwt({ userId: "1", email });
     return NextResponse.json({ token }, { headers: corsHeaders });
   }
