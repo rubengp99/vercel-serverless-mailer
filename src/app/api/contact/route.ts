@@ -3,6 +3,7 @@ import { render } from "@react-email/render";
 import nodemailer from "nodemailer";
 import { JobSignalEmail } from "@/emails/JobSignalEmail";
 import { error } from "node:console";
+import { rateLimit } from "@/lib/rate-limit";
 
 interface MailerRequestBody {
   name: string;
@@ -22,6 +23,21 @@ export async function OPTIONS() {
 
 export async function POST(req: Request) {
   try {
+    // Identify requester (IP-based rate limiting)
+    const ip =
+      req.headers.get("x-forwarded-for") ||
+      req.headers.get("x-real-ip") ||
+      "unknown";
+
+    const limit = await rateLimit(ip, 5, 600); // 5 requests / 10 min
+
+    if (!limit.success) {
+      return NextResponse.json(
+        { error: "Too many requests, please try again later." },
+        { status: 429 }
+      );
+    }
+
     const body: MailerRequestBody = await req.json();
 
     if (!body.name || !body.email || !body.message) {
