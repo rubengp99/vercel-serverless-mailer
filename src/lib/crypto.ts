@@ -1,4 +1,10 @@
-const FRAME_SIZE = 10 * 60 * 1000; // 10 minutes
+export type EncryptedPassword = {
+    iv: string;
+    ciphertext: string;
+    expiresAt: number;
+}
+
+const FRAME_SIZE = 1 * 60 * 1000; // 1 minute
 
 function hexToBytes(hex: string): Uint8Array {
     const bytes = new Uint8Array(hex.length / 2);
@@ -16,35 +22,40 @@ async function getCryptoKey(secret: string, offset = 0) {
     return crypto.subtle.importKey("raw", hash, "AES-GCM", false, ["decrypt"]);
 }
 
-export async function decryptPassword(
-    ivHex: string,
-    ciphertextHex: string,
-) {
+export async function decryptPassword(pwd: EncryptedPassword) {
     const secret = process.env.ENCRYPTION_BASE_SECRET || "fallback-secret";
-    const iv = hexToBytes(ivHex);
-    const ciphertext = hexToBytes(ciphertextHex);
+    const { iv, expiresAt, ciphertext } = pwd
 
-    // try current and previous frame (to tolerate clock drift / frame rotation)
+    // quick reject if rotation TTL expired
+    if (expiresAt < Date.now()) {
+        throw new Error("Encrypted payload has expired (rotation window)");
+    }
+
+    const ivBytes = hexToBytes(iv);
+    const ciphertextBytes = hexToBytes(ciphertext);
+
+    // try current and previous frame (handles drift)
     for (const offset of [0, -1]) {
         try {
             const key = await getCryptoKey(secret, offset);
 
             const decrypted = await crypto.subtle.decrypt(
-                { name: "AES-GCM", iv: iv as BufferSource },
+                { name: "AES-GCM", iv: ivBytes as BufferSource },
                 key,
-                ciphertext as BufferSource
+                ciphertextBytes as BufferSource
             );
 
             const decoder = new TextDecoder();
             const payload = JSON.parse(decoder.decode(decrypted));
 
+            // validate embedded payload expiration
             if (payload.expiresAt && payload.expiresAt < Date.now()) {
-                throw new Error("Password has expired");
+                throw new Error("Decrypted password payload has expired");
             }
 
-            return payload.password;
-        } catch (err) {
-            continue
+            return payload.password as string;
+        } catch {
+            // try next frame
         }
     }
 
