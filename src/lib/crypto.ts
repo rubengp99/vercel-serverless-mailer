@@ -35,7 +35,7 @@ export async function decryptPassword(pwd: EncryptedPassword) {
     const ciphertextBytes = hexToBytes(ciphertext);
 
     // try current and previous frame (handles drift)
-    for (const offset of [0, -1]) {
+    for (const offset of [0, -1, 1]) {
         try {
             const key = await getCryptoKey(secret, offset);
 
@@ -54,8 +54,9 @@ export async function decryptPassword(pwd: EncryptedPassword) {
             }
 
             return payload.password as string;
-        } catch {
-            // try next frame
+        } catch (error) {
+            console.log(error)
+            continue
         }
     }
 

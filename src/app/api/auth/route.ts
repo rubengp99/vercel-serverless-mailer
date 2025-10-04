@@ -9,16 +9,16 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request) {
-  const ip = req.headers.get("x-forwarded-for") || "unknown";
+  //const ip = req.headers.get("x-forwarded-for") || "unknown";
 
   // Limit login requests to 1 per 1 minutes per IP
-  const limit = await rateLimit(ip, 1, 60); // 1 request / 1 min
-  if (!limit.success) {
-    return NextResponse.json(
-      { error: "Too many requests, please try again later." },
-      { status: 429, headers: corsHeaders }
-    );
-  }
+  //const limit = await rateLimit(ip, 1, 60); // 1 request / 1 min
+//  if (!limit.success) {
+//    return NextResponse.json(
+//////      { error: "Too many requests, please try again later." },
+//      { status: 429, headers: corsHeaders }
+////    );
+//  }
 
   const { email, password } = await req.json();
 
