@@ -11,7 +11,7 @@ export async function POST(req: Request) {
   if (!limit.success) {
     return NextResponse.json(
       { error: "Too many requests, please try again later." },
-      { status: 429 }
+      { status: 429, headers: corsHeaders }
     );
   }
 
@@ -22,5 +22,5 @@ export async function POST(req: Request) {
     return NextResponse.json({ token }, { headers: corsHeaders });
   }
 
-  return NextResponse.json({ error: "Invalid credentials" }, { status: 401 });
+  return NextResponse.json({ error: "Invalid credentials" }, { status: 401, headers: corsHeaders });
 }
