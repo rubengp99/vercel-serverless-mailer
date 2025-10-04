@@ -4,6 +4,10 @@ import { corsHeaders } from "@/lib/cors";
 import { rateLimit } from "@/lib/rate-limit";
 import { decryptPassword, EncryptedPassword} from "@/lib/crypto";
 
+export async function OPTIONS() {
+  return NextResponse.json({}, { headers: corsHeaders });
+}
+
 export async function POST(req: Request) {
   const ip = req.headers.get("x-forwarded-for") || "unknown";
 
