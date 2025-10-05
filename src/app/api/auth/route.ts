@@ -9,7 +9,7 @@ export async function OPTIONS() {
 }
 
 export async function POST(req: Request) {
-  /*
+
   const ip = req.headers.get("x-forwarded-for") || "unknown";
 
   // Limit login requests to 1 per 1 minutes per IP
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
       { status: 429, headers: corsHeaders }
     );
   }
-*/
+
   const { email, password } = await req.json();
 
   const pwd = await decryptPassword(password as EncryptedPassword)

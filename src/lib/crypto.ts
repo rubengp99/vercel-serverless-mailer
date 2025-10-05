@@ -54,9 +54,6 @@ export async function decryptPassword(pwd: EncryptedPassword): Promise<string> {
 
       const decoded = new TextDecoder().decode(decrypted);
 
-      // Log decrypted plaintext for debugging (safe only in dev)
-      console.log(`[AES-GCM] Frame offset ${offset} → RAW:`, decoded);
-
       const payload = JSON.parse(decoded);
 
       if (payload.expiresAt && payload.expiresAt < Date.now()) {
