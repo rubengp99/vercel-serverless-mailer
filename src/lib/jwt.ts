@@ -12,7 +12,7 @@ export interface JwtPayload extends DefaultJwtPayload {
   email: string;
 }
 
-export function signJwt(payload: JwtPayload,expiresIn: SignOptions["expiresIn"] = "10m"): string {
+export function signJwt(payload: JwtPayload, expiresIn: SignOptions["expiresIn"] = "10m"): string {
   const options: SignOptions = { expiresIn };
   return jwt.sign(payload, getDynamicSecret(), options);
 }
